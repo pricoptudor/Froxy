@@ -1,0 +1,15 @@
+{
+	"maxsize":	"654321kB",
+	"filesallowed":	["txt", "doc", "xml", "pdf", "xls"],
+	"serverdomains":	[{
+			"name":	"uaic.ro",
+			"clientsrestricted":	["y.ro"],
+			"daysforbidden":	["monday", "tuesday", "friday"],
+			"hoursforbidden":	[8, 9, 11, 12]
+		}, {
+			"name":	"pureftpd.org",
+			"clientsrestricted":	[],
+			"daysforbidden":	["monday", "tuesday", "friday"],
+			"hoursforbidden":	[4, 7, 9, 12]
+		}]
+}

@@ -1,0 +1,33 @@
+//user:admin  pass:admin   ->   user-ul admin 'root'
+//user:username   pass:password
+//nu se poate face nimic nelogat!!
+
+COMMANDS:
+-> login: username   
+        cautam in baza de date user-ul
+
+-> pass: password
+        verificam sa fie parola buna
+
+-> create: username password   
+        cream un nou user
+
+-> logout
+        delogheaza userul curent
+
+-> server: server-name
+        cerem sa se faca conexiunea cu 'server-name', in cazul in care e site ftp
+
+-> exit-proxy
+        comanda pentru admini de a inchide serverul proxy
+
+-> exit
+        comanda pentru user obisnuit sa inclida clientul
+
+-> create-admin: username password
+        comanda pentru creare user admin
+
+-> forbidden
+        mode for modifying ftp rules
+
+

@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <limits.h>
 
+#define DEFAULT_PORT 2024
 #define MAX_JSON 8192
 #define MAX_RESPONSE 4096
 #define MAX_COMMAND 150
@@ -67,18 +68,18 @@ char *getNetIp()
 
 void welcome()
 {
-    /*int command_count = 3;
-    char *command_list[] = {"login: [username]",
-                            "create: [username] [password]",
-                            "exit"};*/
+    int siteftp_count = 3;
+    char *siteftp_list[] = {"freebsd.cs.nctu.edu.tw",
+                            "ftp.pureftpd.org",
+                            "ftp.gnu.org"};
 
     printf("Welcome to my File Transfer client!\n");
-    /*printf("You may introduce one command from the following list:\n");
-    for (int i = 0; i < command_count; ++i)
+    printf("Here is a list with ftp site suggestions(they are rare):\n");
+    for(int i=0;i<siteftp_count;++i)
     {
-        printf("\t\t%s\n", command_list[i]);
+        printf("\t\t\t%s\n",siteftp_list[i]);
     }
-    printf("\nYou must login before using additional commands.\n");*/
+    printf("\\\\\\\\\\\\\\\\\\\\\\\\ \n");
 
     USER_LOGGED = 0;
     ADMIN_LOGGED = 0;
@@ -118,13 +119,13 @@ int init_connection(int argc, char *argv[], int *sd)
     char adresaIp[100];
     strcpy(adresaIp, getNetIp());
 
-    if (argc != 2)
+    if (argc != 1)
     {
-        printf("Sintaxa: %s <port>\n", argv[0]);
+        printf("Sintaxa: %s \n", argv[0]);
         exit(0);
     }
 
-    port = atoi(argv[1]);
+    port = DEFAULT_PORT;
 
     if (((*sd) = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -570,6 +571,13 @@ int mode10(char *command, int sd)
             {
                 return 0;
             }
+
+            if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+            {
+                printf("[client]Error recv ftp list.\n");
+                exit(0);
+            }
+            printf("%s\n", rasp);
 
             while (1)
             {
@@ -1691,6 +1699,13 @@ int mode11(char *command, int sd)
                 printf("[client]Error send ok server.\n");
             }
 
+            if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+            {
+                printf("[client]Error recv ftp list.\n");
+                exit(0);
+            }
+            printf("%s\n", rasp);
+
             if(stop)
             {
                 return 0;
@@ -2229,31 +2244,5 @@ int main(int argc, char *argv[])
 
     command_sequence(&sd);
 
-    /*
-    char msg[100];
-    // citirea mesajului
-    bzero(msg, 100);
-    printf("[client]Introduceti un nume: ");
-    fflush(stdout);
-    read(0, msg, 100);
-
-    // trimiterea mesajului la server
-    if (write(sd, msg, 100) <= 0)
-    {
-        perror("[client]Eroare la write() spre server.\n");
-        return errno;
-    }
-
-    // citirea raspunsului dat de server
-    //  (apel blocant pina cind serverul raspunde)
-    if (read(sd, msg, 100) < 0)
-    {
-        perror("[client]Eroare la read() de la server.\n");
-        return errno;
-    }
-    // afisam mesajul primit
-    printf("[client]Mesajul primit este: %s\n", msg);
-
-    //inchidem conexiunea, am terminat */
     close(sd);
 }

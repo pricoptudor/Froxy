@@ -54,6 +54,14 @@ int init_connect(int *sd)
         clients_pid[i] = -1;
     }
 
+    //setam pathurile de la json si database ca sa nu le pierdem cand ne mutam prin directoare:
+    char symlinkpath[150];
+    strcpy(symlinkpath,"rules.json");
+    realpath(symlinkpath, json_path);
+
+    strcpy(symlinkpath,"users.db");
+    realpath(symlinkpath,database_path);
+
     struct sockaddr_in server;
 
     if (((*sd) = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -95,7 +103,7 @@ static int callback(void *data, int argc, char **argv, char **azColName)
 int restrict_file_add(int client)
 {
     int fd;
-    if (-1 == (fd = open("rules.json", O_RDWR)))
+    if (-1 == (fd = open(json_path, O_RDWR)))
     {
         printf("[proxy]Error opening json file.\n");
         exit(0);
@@ -396,7 +404,7 @@ int restrict_file_add(int client)
 
     close(fd);
 
-    if(-1 == (fd=open("rules.json",O_TRUNC | O_WRONLY)))
+    if(-1 == (fd=open(json_path,O_TRUNC | O_WRONLY)))
     {
         printf("[proxy]Eroare truncare json.\n");
         exit(0);
@@ -416,7 +424,7 @@ int restrict_file_add(int client)
 int restrict_file_modify(int client)
 {
     int fd;
-    if(-1 == (fd = open("rules.json",O_RDWR)))
+    if(-1 == (fd = open(json_path,O_RDWR)))
     {
         printf("[proxy]Error opening json file.\n");
         exit(0);
@@ -607,7 +615,7 @@ int restrict_file_modify(int client)
 
     char* sir_final=cJSON_Print(restrictii);
 
-    if(-1 == (fd=open("rules.json",O_TRUNC | O_WRONLY)))
+    if(-1 == (fd=open(json_path,O_TRUNC | O_WRONLY)))
     {
         printf("[proxy]Eroare truncare json.\n");
         exit(0);
@@ -683,7 +691,7 @@ int solve_client(int client)
             char sql[100];
             char data[MAX_USERPASS];
 
-            rc = sqlite3_open("users.db", &db);
+            rc = sqlite3_open(database_path, &db);
 
             if (rc)
             {
@@ -817,7 +825,7 @@ int solve_client(int client)
             char sql[150];
             char data[MAX_USERPASS];
 
-            rc = sqlite3_open("users.db", &db);
+            rc = sqlite3_open(database_path, &db);
 
             if (rc)
             {
@@ -886,7 +894,7 @@ int solve_client(int client)
             char sql[100];
             char data[MAX_USERPASS];
 
-            rc = sqlite3_open("users.db", &db);
+            rc = sqlite3_open(database_path, &db);
 
             if (rc)
             {
@@ -964,7 +972,7 @@ int solve_client(int client)
             char sql[150];
             char data[MAX_USERPASS];
 
-            rc = sqlite3_open("users.db", &db);
+            rc = sqlite3_open(database_path, &db);
 
             if (rc)
             {
@@ -1062,7 +1070,7 @@ int solve_client(int client)
             char sql[150];
             char data[MAX_USERPASS];
 
-            rc = sqlite3_open("users.db", &db);
+            rc = sqlite3_open(database_path, &db);
 
             if (rc)
             {

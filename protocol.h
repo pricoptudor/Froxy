@@ -26,6 +26,9 @@
 #define MAX_COMMAND 300
 #define ANONYMOUS "anonymous"
 
+static char json_path[PATH_MAX];
+static char database_path[PATH_MAX];
+
 static int socket_cmd;
 static int port_cmd = 21; // basic port for ftp
 static char buffer_cmd[MAX_CMD];
@@ -806,9 +809,9 @@ void package_reading(int *bytes_read, char *name)
 int check_file(char* name,int client)
 {
     int fd;
-    if(-1 == (fd = open("rules.json",O_RDWR)))
+    if(-1 == (fd = open(json_path,O_RDWR)))
     {
-        printf("[proxy]Error opening json file.\n");
+        perror("[proxy]Error opening json file.\n");
         exit(0);
     }
 
@@ -832,13 +835,16 @@ int check_file(char* name,int client)
     maxsize = cJSON_GetObjectItemCaseSensitive(restrictii,"maxsize");
     filesallowed = cJSON_GetObjectItemCaseSensitive(restrictii,"filesallowed");
 
-    int marime;
+    long long int marime;
     char aux[150];
+    strcpy(aux,maxsize->valuestring);
     aux[strlen(aux)-2]=0;
-    sscanf(aux,"%d",&marime);
+    sscanf(aux,"%lld",&marime);
+    marime*=1024;
 
     if(ftp_filesize(name)>marime)
     {
+        printf("[proxy]Dimensiune prea mare:%d > %lld\n",ftp_filesize(name),marime);
         return 0;
     }
 
@@ -870,6 +876,7 @@ int check_file(char* name,int client)
 
     if(flag==0)
     {
+        printf("[proxy]Tip fisier nu e permis.\n");
         return 0;
     }
 
@@ -1061,7 +1068,7 @@ int ftp_download(char *name, int client)
 int check_domain(char* server_ftp)
 {
     int fd;
-    if(-1 == (fd = open("rules.json",O_RDWR)))
+    if(-1 == (fd = open(json_path,O_RDWR)))
     {
         printf("[proxy]Error opening json file.\n");
         exit(0);

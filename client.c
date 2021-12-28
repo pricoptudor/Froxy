@@ -1,3 +1,4 @@
+//#include <protocol.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -37,6 +38,33 @@ void command_error(int command_count, char *command_list[])
     printf("\n\n");
 }
 
+char *getNetIp()
+{
+    // daca e conectat la internet returneaza adresa routerului
+    //   altfel returneaza 127.0.0.1
+    char cmd[100];
+    sprintf(cmd, "%s", "ifconfig | grep inet | grep 192 | xargs | cut -d' ' -f2");
+
+    FILE *fd = popen(cmd, "r");
+
+    char line[4096];
+
+    char *text = (char *)malloc(100);
+    explicit_bzero(text, 100);
+
+    while (fgets(line, 4096, fd) != NULL)
+    {
+        strcat(text, line);
+    }
+
+    text[strlen(text) - 1] = '\0';
+    if (strlen(text) < 1)
+    {
+        strcpy(text, "127.0.0.1");
+    }
+    return text;
+}
+
 void welcome()
 {
     /*int command_count = 3;
@@ -54,34 +82,64 @@ void welcome()
 
     USER_LOGGED = 0;
     ADMIN_LOGGED = 0;
+
+    DIR *dir = opendir("download"); // director download
+    if (dir)
+    {
+        /* Directory exists. */
+        closedir(dir);
+    }
+    else if (ENOENT == errno)
+    {
+        /* Directory does not exist. */
+        if (mkdir("download", 0777) == -1)
+        {
+            printf("[proxy]Error creating download director\n");
+            //return 0;
+        }
+    }
+    else
+    {
+        printf("[proxy]Eroare la deschidere director download.\n");
+        //return 0;
+    }
+
+    if (-1 == chdir("download"))
+    {
+        printf("[proxy]Error entering download folder.\n");
+        //return 0;
+    }
 }
 
 int init_connection(int argc, char *argv[], int *sd)
 {
     struct sockaddr_in server;
 
-    if (argc != 3)
+    char adresaIp[100];
+    strcpy(adresaIp, getNetIp());
+
+    if (argc != 2)
     {
-        printf("Sintaxa: %s <adresa_server> <port>\n", argv[0]);
-        return -1;
+        printf("Sintaxa: %s <port>\n", argv[0]);
+        exit(0);
     }
 
-    port = atoi(argv[2]);
+    port = atoi(argv[1]);
 
     if (((*sd) = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         perror("Eroare la socket().\n");
-        return errno;
+        exit(0);
     }
 
     server.sin_family = AF_INET;
-    server.sin_addr.s_addr = inet_addr(argv[1]);
+    server.sin_addr.s_addr = inet_addr(adresaIp);
     server.sin_port = htons(port);
 
     if (connect((*sd), (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1)
     {
         perror("[client]Eroare la connect().\n");
-        return errno;
+        exit(0);
     }
 
     char msg[150]; // mesaj daca s-a conectat sau serverul e prea plin.
@@ -488,6 +546,362 @@ int mode10(char *command, int sd)
             }
 
             ///////////////[to-do]:aici incepe partea ftp;
+            char rasp[MAX_RESPONSE];
+            int stop=0;
+            if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+            {
+                printf("[client]Error recv ftp list.\n");
+                exit(0);
+            }
+            printf("%s\n", rasp);
+            
+            if(strncmp(rasp,"Client is not allowed",21)==0)
+            {
+                stop=1;
+            }
+
+            strcpy(rasp,"OK");
+            if(-1 == send(sd,rasp,MAX_RESPONSE,0))
+            {
+                printf("[client]Error send ok server.\n");
+            }
+
+            if(stop)
+            {
+                return 0;
+            }
+
+            while (1)
+            {
+                printf("Insert your command here: ");
+                fgets(command, MAX_COMMAND, stdin);
+
+                if (command[strlen(command) - 1] == '\n')
+                {
+                    command[strlen(command) - 1] = 0;
+                }
+
+                ///[to-do]:organizare ftp!!!
+
+                if (strncmp(command, "help", 4) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 4; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[4] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send help ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv help resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "exit", 4) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 4; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[4] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send exit ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv help resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                        break;
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "list-all", 8) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 8; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[8] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send list-all ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv list-all resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "list-files", 10) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 10; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[10] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send list-files ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv list-files resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "download: ", 10) == 0 && strlen(command) > 10)
+                {
+                    int flag = 1;
+                    for (int i = 10; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] < 33 || command[i] > 126)
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send download ftp.\n");
+                            exit(0);
+                        }
+                        int stop=0;
+                        //nu trece de restrictii:
+                        //[to-do]: atentie si la cealalta restrictie sa trimit si mesaj bun,nu numai rau aici
+                        if(-1 == recv(sd,rasp,MAX_RESPONSE,0))
+                        {
+                            printf("Error recv download good.\n");
+                            exit(0);
+                        }
+                        printf("%s\n",rasp);
+                        if(strncmp(rasp,"Client is not allowed",21)==0)
+                        {
+                            stop=1;
+                        }
+                        strcpy(rasp,"Ok");
+                        if(-1 == send(sd,rasp,strlen(rasp)+1,0))
+                        {
+                            printf("[client]Error send approve download.\n");
+                            exit(0);
+                        }
+
+                        if(stop)
+                        {
+                            continue;
+                        }
+
+                        //[to-do]receive the file:
+                        //[to-do]if files exists, give different name;
+                        strcpy(command,command+10);
+                        int fd;
+                        
+                        if (-1 == (fd = open(command, O_RDWR | O_CREAT,0777)))
+                        {
+                            perror("[client]Eroare creare fisier.\n");
+                            exit(0);
+                        }
+                        //freebsd.cs.nctu.edu.tw
+
+                        char ch;
+                        int bytes_read;
+                        //int stop;
+                        bytes_read = 0;
+                        /*if(-1 == recv(sd,&stop,sizeof(int),0))
+                        {
+                            perror("WTF is this./n");
+                            exit(0);
+                        }
+                        printf("\nstop:%d\n",stop);*/
+                        
+                        while (1)
+                        {
+                            /*if(-1 == recv(sd,&stop,sizeof(int),0))
+                            {
+                                perror("This is a problem.\n");
+                            }
+                            if(stop==1)
+                            {
+                                break;
+                            }*/
+                            int aux = recv(sd, &ch, sizeof(char), 0);
+                            if(ch==0)
+                            {
+                                printf("Download complete.\n");
+                                break;
+                            }
+                            if (aux == 0)
+                            {
+                                printf("[proxy]Download completed.\n");
+                                break;
+                            }
+                            if (aux < 0)
+                            {
+                                printf("[proxy]Download interrupted.\n");
+                                break;
+                            }
+                            if (write(fd, &ch, sizeof(char)) < 0)
+                            {
+                                printf("[proxy]Writing in file failed.\n");
+                                break;
+                            }
+                            bytes_read++;
+                        }
+
+                        close(fd);
+
+                        strcpy(command,"Done");
+                        if(-1 == send(sd,command,strlen(command)+1,0))
+                        {
+                            printf("[client]error send done download.\n");
+                            exit(0);
+                        }
+
+                        if(-1 == recv(sd,rasp,MAX_RESPONSE,0))
+                        {
+                            printf("[client]error recv done download.\n");
+                            exit(0);
+                        }
+                        printf("%s\n",rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect(or filename incorrect). Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "move-down: ", 11) == 0 && strlen(command) > 11)
+                {
+                    int flag = 1;
+                    for (int i = 11; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] < 33 || command[i] > 126)
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("[client]Error send move-down ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv move-down resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect(or directory name incorrect). Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "move-up", 7) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 7; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[7] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send move-up ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv move-up resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else
+                {
+                    printf("[client]Command format incorrect. Retry.\n");
+                }
+            }
         }
         else
         {
@@ -1002,7 +1416,7 @@ int mode11(char *command, int sd)
                             exit(0);
                         }
                     }
-                    strcpy(rasp,"Stop");
+                    strcpy(rasp, "Stop");
                     if (-1 == send(sd, rasp, strlen(rasp) + 1, 0))
                     {
                         printf("[client]Error sending stop.\n");
@@ -1016,7 +1430,7 @@ int mode11(char *command, int sd)
                     exit(0);
                 }
                 printf("%s\n", rasp);
-                //printf("Do you want to delete restrictions to servers?[y\\n]\n");
+                // printf("Do you want to delete restrictions to servers?[y\\n]\n");
                 do
                 {
                     printf("Please insert your answer: ");
@@ -1073,8 +1487,8 @@ int mode11(char *command, int sd)
                             exit(0);
                         }
                     }
-                    strcpy(rasp,"Stop");
-                    if(-1 == send(sd,rasp,strlen(rasp)+1,0))
+                    strcpy(rasp, "Stop");
+                    if (-1 == send(sd, rasp, strlen(rasp) + 1, 0))
                     {
                         printf("[client]Error send stop.\n");
                         exit(0);
@@ -1257,6 +1671,362 @@ int mode11(char *command, int sd)
             }
 
             ///////////////[to-do]:aici incepe partea ftp;
+            char rasp[MAX_RESPONSE];
+            int stop=0;
+            if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+            {
+                printf("[client]Error recv ftp list.\n");
+                exit(0);
+            }
+            printf("%s\n", rasp);
+            
+            if(strncmp(rasp,"Client is not allowed",21)==0)
+            {
+                stop=1;
+            }
+
+            strcpy(rasp,"OK");
+            if(-1 == send(sd,rasp,MAX_RESPONSE,0))
+            {
+                printf("[client]Error send ok server.\n");
+            }
+
+            if(stop)
+            {
+                return 0;
+            }
+
+            while (1)
+            {
+                printf("Insert your command here: ");
+                fgets(command, MAX_COMMAND, stdin);
+
+                if (command[strlen(command) - 1] == '\n')
+                {
+                    command[strlen(command) - 1] = 0;
+                }
+
+                ///[to-do]:organizare ftp!!!
+
+                if (strncmp(command, "help", 4) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 4; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[4] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send help ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv help resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "exit", 4) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 4; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[4] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send exit ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv help resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                        break;
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "list-all", 8) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 8; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[8] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send list-all ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv list-all resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "list-files", 10) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 10; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[10] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send list-files ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv list-files resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "download: ", 10) == 0 && strlen(command) > 10)
+                {
+                    int flag = 1;
+                    for (int i = 10; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] < 33 || command[i] > 126)
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send download ftp.\n");
+                            exit(0);
+                        }
+                        int stop=0;
+                        //nu trece de restrictii:
+                        //[to-do]: atentie si la cealalta restrictie sa trimit si mesaj bun,nu numai rau aici
+                        if(-1 == recv(sd,rasp,MAX_RESPONSE,0))
+                        {
+                            printf("Error recv download good.\n");
+                            exit(0);
+                        }
+                        printf("%s\n",rasp);
+                        if(strncmp(rasp,"Client is not allowed",21)==0)
+                        {
+                            stop=1;
+                        }
+                        strcpy(rasp,"Ok");
+                        if(-1 == send(sd,rasp,strlen(rasp)+1,0))
+                        {
+                            printf("[client]Error send approve download.\n");
+                            exit(0);
+                        }
+
+                        if(stop)
+                        {
+                            continue;
+                        }
+
+                        //[to-do]receive the file:
+                        //[to-do]if files exists, give different name;
+                        strcpy(command,command+10);
+                        int fd;
+                        
+                        if (-1 == (fd = open(command, O_RDWR | O_CREAT,0777)))
+                        {
+                            perror("[client]Eroare creare fisier.\n");
+                            exit(0);
+                        }
+                        //freebsd.cs.nctu.edu.tw
+
+                        char ch;
+                        int bytes_read;
+                        //int stop;
+                        bytes_read = 0;
+                        /*if(-1 == recv(sd,&stop,sizeof(int),0))
+                        {
+                            perror("WTF is this./n");
+                            exit(0);
+                        }
+                        printf("\nstop:%d\n",stop);*/
+                        
+                        while (1)
+                        {
+                            /*if(-1 == recv(sd,&stop,sizeof(int),0))
+                            {
+                                perror("This is a problem.\n");
+                            }
+                            if(stop==1)
+                            {
+                                break;
+                            }*/
+                            int aux = recv(sd, &ch, sizeof(char), 0);
+                            if(ch==0)
+                            {
+                                printf("Download complete.\n");
+                                break;
+                            }
+                            if (aux == 0)
+                            {
+                                printf("[proxy]Download completed.\n");
+                                break;
+                            }
+                            if (aux < 0)
+                            {
+                                printf("[proxy]Download interrupted.\n");
+                                break;
+                            }
+                            if (write(fd, &ch, sizeof(char)) < 0)
+                            {
+                                printf("[proxy]Writing in file failed.\n");
+                                break;
+                            }
+                            bytes_read++;
+                        }
+
+                        close(fd);
+
+                        strcpy(command,"Done");
+                        if(-1 == send(sd,command,strlen(command)+1,0))
+                        {
+                            printf("[client]error send done download.\n");
+                            exit(0);
+                        }
+
+                        if(-1 == recv(sd,rasp,MAX_RESPONSE,0))
+                        {
+                            printf("[client]error recv done download.\n");
+                            exit(0);
+                        }
+                        printf("%s\n",rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect(or filename incorrect). Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "move-down: ", 11) == 0 && strlen(command) > 11)
+                {
+                    int flag = 1;
+                    for (int i = 11; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] < 33 || command[i] > 126)
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("[client]Error send move-down ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv move-down resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect(or directory name incorrect). Retry.\n");
+                    }
+                }
+                else if (strncmp(command, "move-up", 7) == 0)
+                {
+                    int flag = 1;
+                    for (int i = 7; i < strlen(command) && flag; ++i)
+                    {
+                        if (command[i] != ' ')
+                        {
+                            flag = 0;
+                        }
+                    }
+
+                    if (flag == 1)
+                    {
+                        command[7] = 0;
+                        if (-1 == send(sd, command, strlen(command) + 1, 0))
+                        {
+                            printf("Error send move-up ftp.\n");
+                            exit(0);
+                        }
+
+                        if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
+                        {
+                            printf("[client]Error recv move-up resp.\n");
+                            exit(0);
+                        }
+                        printf("%s\n", rasp);
+                    }
+                    else
+                    {
+                        printf("[client]Command format incorrect. Retry.\n");
+                    }
+                }
+                else
+                {
+                    printf("[client]Command format incorrect. Retry.\n");
+                }
+            }
         }
         else
         {

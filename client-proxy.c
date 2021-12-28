@@ -1,4 +1,4 @@
-#include <sys/types.h>
+/*#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <errno.h>
@@ -8,15 +8,15 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <fcntl.h>
+#include <fcntl.h>*/
 #include "sqlite/sqlite3.h"
 #include "cjson/cJSON.h"
+#include "protocol.h"
 
 //[to-do]:error handling!
 
-#define MAX_JSON 8192
 #define MAX_RESPONSE 4096
-#define MAX_COMMAND 150
+//#define MAX_COMMAND 150
 #define MAX_USERPASS 40
 #define MAX_CLIENTS 15
 #define PORT 2024
@@ -36,6 +36,7 @@ void my_handler(int signum)
                 clients_pid[i] = -1;
             }
         }
+        exit(0);
     }
 }
 
@@ -921,6 +922,8 @@ int solve_client(int client)
         }
         else if (strncmp(command, "server: ", 8) == 0) //[to-do]:aici incepe partea ftp
         {
+            strcpy(command,command+8);
+            ftp_mode(command,client);
         }
         else if (strncmp(command, "create-admin: ", 14) == 0)
         {
@@ -1093,8 +1096,8 @@ int solve_client(int client)
                 exit(0);
             }
             sleep(3);
-            kill(getppid(), SIGUSR1);
             close(client);
+            kill(getppid(), SIGUSR1);
             exit(0);
         }
         else if (strncmp(command, "exit", 4) == 0)

@@ -11,5 +11,10 @@
 			"clientsrestricted":	[],
 			"daysforbidden":	["monday", "tuesday", "friday"],
 			"hoursforbidden":	[4, 7, 9, 12]
+		}, {
+			"name": ".edu.tw",
+			"clientsrestricted": ["tudor"],
+			"daysforbidden": ["tuesday"],
+			"hoursforbidden": [11, 12]
 		}]
 }

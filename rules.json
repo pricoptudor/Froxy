@@ -1,6 +1,6 @@
 {
 	"maxsize":	"654321kB",
-	"filesallowed":	["txt", "doc", "xml", "pdf", "xls"],
+	"filesallowed":	["txt", "doc", "xml", "pdf", "xls", "README"],
 	"serverdomains":	[{
 			"name":	"uaic.ro",
 			"clientsrestricted":	["y.ro"],

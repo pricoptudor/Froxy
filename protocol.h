@@ -176,7 +176,19 @@ int ftp_login(char *addr, int port, char *username, char *password)
     //////////////////////////////////////////////////
     // CAZUL IN CARE SERVERUL NU CERE PAROLA : 220
     //////////////////////////////////////////////////
-    int aux = ftp_recv_cmd(buffer_cmd, MAX_CMD);
+    int aux;//= ftp_recv_cmd(buffer_cmd, MAX_CMD);
+    do
+    {
+        explicit_bzero(buffer_cmd, MAX_CMD);
+        aux = ftp_recv_cmd(buffer_cmd, MAX_CMD);
+        if (aux != 230 && aux != 331)
+        {
+            printf("[proxy]Bad server!\n");
+            close(socket_cmd);
+            return 0;
+        }
+        printf("%s", buffer_cmd);
+    } while (buffer_cmd[3] == '-');
 
     if (aux == 331)
     {
@@ -803,7 +815,7 @@ int check_file(char* name,int client)
     cJSON *restrictii = cJSON_Parse(file);
     if(restrictii == NULL)
     {
-        return -1;
+        return 0;
     }
 
     maxsize = cJSON_GetObjectItemCaseSensitive(restrictii,"maxsize");
@@ -823,27 +835,29 @@ int check_file(char* name,int client)
     }
 
     int flag=0;
+
+    int contor=0;
+    int contor2=strlen(name)-1;
+    while(name[contor2]!='.' && contor2>=0)
+    {
+        aux[contor++]=name[contor2--];
+    }
+    aux[contor]=0;
+        
+    char term[30];
+    contor2=0;
+    for(int i=contor-1;i>=0;--i)
+    {
+        term[contor2++]=aux[i];
+    }
+    term[contor2]=0;
+
     cJSON* type;
     cJSON_ArrayForEach(type,filesallowed)
     {
-        int contor=0;
-        int contor2=strlen(type->valuestring)-1;
-        while(type->valuestring[contor2]!='.')
+        if(strcmp(term,type->valuestring)==0)
         {
-            aux[contor++]=type->valuestring[contor2--];
-        }
-        aux[contor]=0;
-        
-        char term[30];
-        contor2=0;
-        for(int i=contor-1;i>=0;--i)
-        {
-            term[contor2++]=aux[i];
-        }
-        term[contor2]=0;
-
-        if(strcmp(term,type->valuestring))
-        {
+            //printf("%s --> %s\n",term,type->valuestring);
             flag=1;
         }
     }

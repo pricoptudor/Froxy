@@ -34,8 +34,8 @@ static int port_cmd = 21; // basic port for ftp
 static char buffer_cmd[MAX_CMD];
 static int socket_data;
 
-//[TO-DO]: ATENTIE LA CITIREA RASPUNSURILOR CU MAI MULTE LINII!!!!!!!!!
-//[to-do]: functiile de listare sunt doar cu detalii/fara detalii
+//ATENTIE LA CITIREA RASPUNSURILOR CU MAI MULTE LINII!!!!!!!!!
+//functiile de listare sunt doar cu detalii/fara detalii
 //          ca sa vad daca e directory trebuie sa ma uit in LIST: drwxr-xr-x: prima litera => directory, altfel e file
 
 int create_tmp()
@@ -116,7 +116,7 @@ int ftp_recv_cmd(char *rasp, int len)
         username = anonymous
         password = anonymous
 */
-// OBS: in caz ca vrea sa dea ip-ul sa fac overload la functie[TO-DO]
+
 int ftp_login(char *addr, int port, char *username, char *password)
 {
     // printf("[proxy]Attempting to connect to the FTP-server...\n");
@@ -171,7 +171,7 @@ int ftp_login(char *addr, int port, char *username, char *password)
         return 0;
     }
     explicit_bzero(buffer_cmd, MAX_CMD);
-    //////////////////////////////////////////////////  aici s-ar putea sa fi incurcat treaba
+    ////////////////////////////////////////////////// 
     // CAZUL IN CARE SERVERUL CERE PAROLA: 331
     //////////////////////////////////////////////////
     // CAZUL IN CARE SERVERUL NU CERE PAROLA : 220
@@ -670,7 +670,7 @@ int delete_directories()
 int create_directories(char *path)
 {
     int count_chdir = 0;
-    char *p = strtok(path, "/"); // printf("come on:%s\n",p);
+    char *p = strtok(path, "/");
     char *r;
     while (p != NULL)
     {
@@ -679,11 +679,11 @@ int create_directories(char *path)
             p = strtok(NULL, "/");
         }
         r = p;
-        p = strtok(NULL, "/"); // printf("bish direcct:%s; %s;\n",p,r);
+        p = strtok(NULL, "/"); 
         if (p == NULL)         // am ajuns la final
         {
             char s[100];
-            int fd_aux; // printf("biiish: %s\n",getcwd(s,100));
+            int fd_aux; 
             if (-1 == (fd_aux = open(r, O_RDWR | O_CREAT | O_TRUNC, 0777)))
             {
                 perror("[proxy]Eroare la  creare fisier.\n");
@@ -737,41 +737,15 @@ int create_directories(char *path)
 
 void package_reading(int *bytes_read, char *name)
 {
-    /*
-    //printf("here?\n");
-    // portiunea asta pot sa o fac la deschiderea proxy-ului;
-    DIR *dir = opendir("tmp"); // director temporar cu fisierele din proxy
-    if (dir)
-    {
-        // Directory exists.
-        closedir(dir);
-    }
-    else if (ENOENT == errno)
-    {
-        // Directory does not exist.
-        if (mkdir("tmp", 0777) == -1)
-        {
-            printf("[proxy]Error creating temporary director\n");
-            exit(0);
-        }
-    }
-    else
-    {
-        printf("[proxy]Eroare la deschidere director temporar.\n");
-        exit(0);
-    }*/
     ////////////////////////////
-    // printf("here?\n");
     int fd;
     char path[PATH_MAX];
     char file[PATH_MAX];
 
-    /*strcpy(path, "tmp"); //asa era cand nu faceam chdir la inceput in 'tmp'
-    strcat(path, name);//printf("pathul:%s\n",path); */
-    strcpy(path, name); // aste e nou;
+    strcpy(path, name); 
     strcpy(file, "./");
     strcat(file, path);
-    create_directories(path); // printf("fisierul: %s\n",file);
+    create_directories(path); 
     if (-1 == (fd = open(file, O_RDWR)))
     {
         perror("[proxy]Eroare creare fisier.\n");
@@ -889,8 +863,7 @@ int ftp_download(char *name, int client)
     char rasp[MAX_CMD];
     //check restrictii:
     if(check_file(name,client)==0)
-    {//checkpoint
-        
+    {
         strcpy(rasp,"Client is not allowed to download this file");
         if(-1 == send(client,rasp,strlen(rasp)+1,0))
         {
@@ -919,9 +892,6 @@ int ftp_download(char *name, int client)
         }
     }
 
-    
-
-    // char rasp[LONG_RESPONSE]="";
     if (access(name, F_OK) == 0)
     {
         // file exists
@@ -961,7 +931,7 @@ int ftp_download(char *name, int client)
             printf("[proxy]Failed retr command\n");
             return 0;
         }
-        // printf("retr sent?\n");
+        
         explicit_bzero(buffer_cmd, MAX_CMD);
         if (ftp_recv_cmd(buffer_cmd, MAX_CMD) != 150)
         {
@@ -1001,23 +971,15 @@ int ftp_download(char *name, int client)
     int bytes_written;
     int stop=1,aux;
     bytes_written = 0;
-    /*if(-1 == send(client,&stop,sizeof(int),0))
-    {
-        perror("WTF HERE??");
-        exit(0);
-    }
-    printf("\nstop:%d\n",stop);*/
     while (1)
     {
         if(-1 ==(aux = read(fd, ch, MAX_CMD)))
         {
             perror("Eroare fking fisier.\n");
         }
-        //printf("\n%s\n",ch);
+        
         if (aux == 0)
         {
-            //stop=1;
-            //send(client,&stop,sizeof(int),0);
             printf("[proxy]Download completed.\n");
             break;
         }
@@ -1028,7 +990,6 @@ int ftp_download(char *name, int client)
         }
         if(aux>0)
         {
-            //send(client,&stop,sizeof(int),0);
             if (send(client, ch, strlen(ch), 0) < 0)
             {
                 printf("[proxy]Writing in client download failed.\n");
@@ -1178,7 +1139,6 @@ int ftp_mode(char *server_ftp, int client)
                             "move-down: [directory-name]",
                             "move-up"};
 
-    //[to-do]verificare restrictii!!!
     //verificare serverdomains:
     char rasp[MAX_CMD];
     if(check_domain(server_ftp)==0)

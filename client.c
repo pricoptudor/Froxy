@@ -1,4 +1,3 @@
-//#include <protocol.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -20,8 +19,6 @@
 #define MAX_RESPONSE 4096
 #define MAX_COMMAND 150
 #define MAX_USERPASS 40
-
-// SA MA UIT DUPA CHECKPOINTS!!!
 
 char CURRENT_USER[MAX_USERPASS];
 int USER_LOGGED;
@@ -87,28 +84,28 @@ void welcome()
     DIR *dir = opendir("download"); // director download
     if (dir)
     {
-        /* Directory exists. */
+        // Directory exists. 
         closedir(dir);
     }
     else if (ENOENT == errno)
     {
-        /* Directory does not exist. */
+        // Directory does not exist. 
         if (mkdir("download", 0777) == -1)
         {
             printf("[proxy]Error creating download director\n");
-            //return 0;
+            exit(0);
         }
     }
     else
     {
         printf("[proxy]Eroare la deschidere director download.\n");
-        //return 0;
+        exit(0);
     }
 
     if (-1 == chdir("download"))
     {
         printf("[proxy]Error entering download folder.\n");
-        //return 0;
+        exit(0);
     }
 }
 
@@ -181,7 +178,7 @@ int dns_name(char c)
     return 0;
 }
 
-int mode00(char *command, int sd) //[checkpoint]:testare mod 00;
+int mode00(char *command, int sd) 
 {
     /*comenzi disponibile:
             login: username  -+->  pass: password
@@ -387,7 +384,6 @@ int mode00(char *command, int sd) //[checkpoint]:testare mod 00;
         {
             command_error(command_count, command_list);
         }
-        //[to-do]: raspuns server + exit()
     }
     else
     {
@@ -546,7 +542,7 @@ int mode10(char *command, int sd)
                 exit(0);
             }
 
-            ///////////////[to-do]:aici incepe partea ftp;
+            ///////////////aici incepe partea ftp:
             char rasp[MAX_RESPONSE];
             int stop=0;
             if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
@@ -588,8 +584,6 @@ int mode10(char *command, int sd)
                 {
                     command[strlen(command) - 1] = 0;
                 }
-
-                ///[to-do]:organizare ftp!!!
 
                 if (strncmp(command, "help", 4) == 0)
                 {
@@ -741,7 +735,6 @@ int mode10(char *command, int sd)
                         }
                         int stop=0;
                         //nu trece de restrictii:
-                        //[to-do]: atentie si la cealalta restrictie sa trimit si mesaj bun,nu numai rau aici
                         if(-1 == recv(sd,rasp,MAX_RESPONSE,0))
                         {
                             printf("Error recv download good.\n");
@@ -764,39 +757,29 @@ int mode10(char *command, int sd)
                             continue;
                         }
 
-                        //[to-do]receive the file:
-                        //[to-do]if files exists, give different name;
-                        strcpy(command,command+10);
+                        //receive the file:
+                        //if files exists, give different name;
+                        strcpy(rasp,command+10);
                         int fd;
                         
-                        if (-1 == (fd = open(command, O_RDWR | O_CREAT,0777)))
+                        while( access( rasp, F_OK ) == 0 ) 
+                        {
+                            // file exists
+                            strcat(rasp,"(1)");
+                        } 
+
+                        if (-1 == (fd = open(rasp, O_RDWR | O_CREAT,0777)))
                         {
                             perror("[client]Eroare creare fisier.\n");
                             exit(0);
                         }
-                        //freebsd.cs.nctu.edu.tw
 
                         char ch;
                         int bytes_read;
-                        //int stop;
                         bytes_read = 0;
-                        /*if(-1 == recv(sd,&stop,sizeof(int),0))
-                        {
-                            perror("WTF is this./n");
-                            exit(0);
-                        }
-                        printf("\nstop:%d\n",stop);*/
                         
                         while (1)
                         {
-                            /*if(-1 == recv(sd,&stop,sizeof(int),0))
-                            {
-                                perror("This is a problem.\n");
-                            }
-                            if(stop==1)
-                            {
-                                break;
-                            }*/
                             int aux = recv(sd, &ch, sizeof(char), 0);
                             if(ch==0)
                             {
@@ -1008,12 +991,6 @@ int mode11(char *command, int sd)
 
                 printf("This is the JSON config file:\n%s\n", file);
                 printf("\nDo you want to add other types of files?[y\\n]\n");
-                /*if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
-                {
-                    printf("[client]Error recv first question.\n");
-                    exit(0);
-                }
-                printf("%s\n", rasp);*/
 
                 do
                 {
@@ -1203,7 +1180,6 @@ int mode11(char *command, int sd)
                         printf("%s\n", rasp);
                         printf("Insert here4: ");
 
-                        // int flag;
                         do
                         {
                             fgets(command, 150, stdin);
@@ -1379,9 +1355,6 @@ int mode11(char *command, int sd)
                     }
                 } while (command[0] != 'y' && command[0] != 'n');
 
-                //[checkpoint]: verific ca toate recv sa fie in rasp;
-                // sa pun modify maxsize SI file types!!(le sarisem)
-
                 if (-1 == send(sd, command, strlen(command) + 1, 0))
                 {
                     printf("[client]Error sending forbiddenM y or n letter.\n");
@@ -1438,7 +1411,6 @@ int mode11(char *command, int sd)
                     exit(0);
                 }
                 printf("%s\n", rasp);
-                // printf("Do you want to delete restrictions to servers?[y\\n]\n");
                 do
                 {
                     printf("Please insert your answer: ");
@@ -1502,13 +1474,6 @@ int mode11(char *command, int sd)
                         exit(0);
                     }
                 }
-
-                /*strcpy(command, "Done");
-                if (-1 == send(sd, command, strlen(command) + 1, 0))
-                {
-                    printf("[client]Error sending done in m.\n");
-                    exit(0);
-                }*/
             }
 
             if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
@@ -1584,7 +1549,6 @@ int mode11(char *command, int sd)
         {
             command_error(command_count, command_list);
         }
-        //[to-do]: raspuns server + exit()
     }
     else if (strncmp(command, "create-admin: ", 14) == 0 && len > 14)
     {
@@ -1678,7 +1642,7 @@ int mode11(char *command, int sd)
                 exit(0);
             }
 
-            ///////////////[to-do]:aici incepe partea ftp;
+            ///////////////aici incepe partea ftp;
             char rasp[MAX_RESPONSE];
             int stop=0;
             if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
@@ -1720,8 +1684,6 @@ int mode11(char *command, int sd)
                 {
                     command[strlen(command) - 1] = 0;
                 }
-
-                ///[to-do]:organizare ftp!!!
 
                 if (strncmp(command, "help", 4) == 0)
                 {
@@ -1873,7 +1835,6 @@ int mode11(char *command, int sd)
                         }
                         int stop=0;
                         //nu trece de restrictii:
-                        //[to-do]: atentie si la cealalta restrictie sa trimit si mesaj bun,nu numai rau aici
                         if(-1 == recv(sd,rasp,MAX_RESPONSE,0))
                         {
                             printf("Error recv download good.\n");
@@ -1896,39 +1857,29 @@ int mode11(char *command, int sd)
                             continue;
                         }
 
-                        //[to-do]receive the file:
-                        //[to-do]if files exists, give different name;
-                        strcpy(command,command+10);
+                        //receive the file:
+                        //if files exists, give different name;
+                        strcpy(rasp,command+10);
                         int fd;
                         
-                        if (-1 == (fd = open(command, O_RDWR | O_CREAT,0777)))
+                        while(access(rasp,F_OK)==0)
+                        {
+                            //file exists
+                            strcat(rasp,"(1)");
+                        }
+
+                        if (-1 == (fd = open(rasp, O_RDWR | O_CREAT,0777)))
                         {
                             perror("[client]Eroare creare fisier.\n");
                             exit(0);
                         }
-                        //freebsd.cs.nctu.edu.tw
 
                         char ch;
                         int bytes_read;
-                        //int stop;
                         bytes_read = 0;
-                        /*if(-1 == recv(sd,&stop,sizeof(int),0))
-                        {
-                            perror("WTF is this./n");
-                            exit(0);
-                        }
-                        printf("\nstop:%d\n",stop);*/
                         
                         while (1)
                         {
-                            /*if(-1 == recv(sd,&stop,sizeof(int),0))
-                            {
-                                perror("This is a problem.\n");
-                            }
-                            if(stop==1)
-                            {
-                                break;
-                            }*/
                             int aux = recv(sd, &ch, sizeof(char), 0);
                             if(ch==0)
                             {

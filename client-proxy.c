@@ -1,22 +1,8 @@
-/*#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <fcntl.h>*/
 #include "sqlite/sqlite3.h"
 #include "cjson/cJSON.h"
 #include "protocol.h"
 
-//[to-do]:error handling!
-
 #define MAX_RESPONSE 4096
-//#define MAX_COMMAND 150
 #define MAX_USERPASS 40
 #define MAX_CLIENTS 15
 #define PORT 2024
@@ -133,25 +119,10 @@ int restrict_file_add(int client)
     }
 
     maxsize = cJSON_GetObjectItemCaseSensitive(restrictii, "maxsize");
-    /*if (cJSON_IsString(maxsize) && (maxsize->valuestring != NULL))
-    {
-        printf("Checking maximum allowed size: \"%s\"\n", maxsize->valuestring);
-    }*/
 
     filesallowed = cJSON_GetObjectItemCaseSensitive(restrictii, "filesallowed");
-    /*cJSON *fileallowed;
-    cJSON_ArrayForEach(fileallowed, filesallowed)
-    {
-        printf("Checking files allowed: \"%s\"\n", fileallowed->valuestring);
-    }*/
 
     char rasp[MAX_RESPONSE];
-    /*strcpy(rasp, "Do you want to add other types of files?[y\\n]\n");
-    if (-1 == send(client, rasp, strlen(rasp) + 1, 0))
-    {
-        printf("[proxy]Error sending add type files question.\n");
-        exit(0);
-    }*/
 
     if (-1 == recv(client, rasp, MAX_RESPONSE, 0))
     {
@@ -193,36 +164,6 @@ int restrict_file_add(int client)
     }
 
     serverdomains = cJSON_GetObjectItemCaseSensitive(restrictii, "serverdomains");
-    /*cJSON *serverdomain;
-    cJSON_ArrayForEach(serverdomain, serverdomains)
-    {
-        cJSON *name = cJSON_GetObjectItemCaseSensitive(serverdomain, "name");
-        if (cJSON_IsString(name) && (name->valuestring != NULL))
-        {
-            printf("Checking server-name not allowed: \"%s\"\n", name->valuestring);
-        }
-
-        cJSON *clientsrestricted = cJSON_GetObjectItemCaseSensitive(serverdomain, "clientsrestricted");
-        const cJSON *clientrestricted;
-        cJSON_ArrayForEach(clientrestricted, clientsrestricted)
-        {
-            printf("Names of client not allowed: \"%s\"\n", clientrestricted->valuestring);
-        }
-
-        cJSON *daysforbidden = cJSON_GetObjectItemCaseSensitive(serverdomain, "daysforbidden");
-        const cJSON *dayforbidden;
-        cJSON_ArrayForEach(dayforbidden, daysforbidden)
-        {
-            printf("Names of days not allowed: \"%s\"\n", dayforbidden->valuestring);
-        }
-
-        cJSON *hoursforbidden = cJSON_GetObjectItemCaseSensitive(serverdomain, "hoursforbidden");
-        const cJSON *hourforbidden;
-        cJSON_ArrayForEach(hourforbidden, hoursforbidden)
-        {
-            printf("Names of hours not allowed: \"%f\"\n", hourforbidden->valuedouble);
-        }
-    }*/
 
     strcpy(rasp, "Do you want to add other domain restriction?[y\\n]\n");
     if (-1 == send(client, rasp, strlen(rasp) + 1, 0))
@@ -512,7 +453,6 @@ int restrict_file_modify(int client)
             }
             if(rasp[0]=='y')
             {
-                //cJSON_DeleteItemFromArray(filesallowed,contor);
                 to_delete[contor]=1;
             }
             contor++;
@@ -580,7 +520,6 @@ int restrict_file_modify(int client)
             }
             if(rasp[0]=='y')
             {
-                //cJSON_DeleteItemFromArray(serverdomains,contor);
                 to_delete[contor]=1;
             }
             contor++;       
@@ -606,12 +545,6 @@ int restrict_file_modify(int client)
             exit(0);
         }
     }
-
-    /*if(-1 == recv(client,rasp,MAX_RESPONSE,0))
-    {
-        printf("[proxy]Error recv Done msg.\n");
-        exit(0);
-    }*/
 
     char* sir_final=cJSON_Print(restrictii);
 
@@ -789,7 +722,6 @@ int solve_client(int client)
         else if (strncmp(command, "create: ", 8) == 0)
         {
             // daca userul exista : raspuns exista =>>
-            //[to-do]:daca eroare la baza de date: raspuns retry =>>
             // created successfully
             char utilizator[MAX_USERPASS] = "";
             char parola[MAX_USERPASS] = "";
@@ -928,7 +860,7 @@ int solve_client(int client)
                 exit(0);
             }
         }
-        else if (strncmp(command, "server: ", 8) == 0) //[to-do]:aici incepe partea ftp
+        else if (strncmp(command, "server: ", 8) == 0) //aici incepe partea ftp
         {
             strcpy(command,command+8);
             ftp_mode(command,client);
@@ -936,7 +868,6 @@ int solve_client(int client)
         else if (strncmp(command, "create-admin: ", 14) == 0)
         {
             // daca userul exista : raspuns exista =>>
-            //[to-do]:daca eroare la baza de date: raspuns retry =>>
             // created successfully
             char utilizator[MAX_USERPASS] = "";
             char parola[MAX_USERPASS] = "";
@@ -1118,19 +1049,7 @@ int solve_client(int client)
             }
             close(client);
             return client;
-            // exit(0);
         }
-        /*
-        // returnam mesajul clientului
-        if (send(client, rasp, MAX_RESPONSE, 0) <= 0)
-        {
-            perror("[proxy]Eroare la write() raspuns catre client.\n");
-            exit(0);
-        }
-        else
-        {
-            printf("[proxy]Mesajul a fost trasmis cu succes.\n");
-        }*/
     }
 }
 
@@ -1202,7 +1121,7 @@ int serve_clients(int sd)
                         printf("[proxy]Error sending welcome connected to client.\n");
                         exit(0);
                     }
-                    // printf("[proxy]Connected to server.\n");//[to-do]:mesaj de trimis clientului:daca a reusit sa se conecteze sau mai trebuie sa astepte;
+                    // printf("[proxy]Connected to server.\n");
                     clients_count++;
                     clients_pid[i] = pid;
                     break;
@@ -1238,7 +1157,7 @@ int serve_clients(int sd)
             exit(0);
         }
 
-    } /* while */
+    }
 }
 
 int main()

@@ -1,6 +1,6 @@
 {
-	"maxsize":	"654321kB",
-	"filesallowed":	["txt", "doc", "xml", "pdf", "xls", "README"],
+	"maxsize":	"66554433kB",
+	"filesallowed":	["txt", "doc", "xml", "pdf", "xls", "README", "TXT", "msg"],
 	"serverdomains":	[{
 			"name":	"uaic.ro",
 			"clientsrestricted":	["y.ro"],
@@ -12,9 +12,14 @@
 			"daysforbidden":	["monday", "tuesday", "friday"],
 			"hoursforbidden":	[4, 7, 9, 12]
 		}, {
-			"name": ".edu.tw",
-			"clientsrestricted": ["tudor"],
-			"daysforbidden": ["tuesday"],
-			"hoursforbidden": [11, 12]
+			"name":	".edu.tw",
+			"clientsrestricted":	["tudor"],
+			"daysforbidden":	["tuesday"],
+			"hoursforbidden":	[11, 12]
+		}, {
+			"name":	"test.ro",
+			"clientsrestricted":	["testclient.ro", "test2client.ro"],
+			"daysforbidden":	["tuesday", "wednesday", "thursday", "saturday"],
+			"hoursforbidden":	[15, 10, 3]
 		}]
 }

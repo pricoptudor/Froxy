@@ -1029,7 +1029,7 @@ int ftp_download(char *name, int client)
 
     explicit_bzero(buffer_cmd, MAX_CMD);
     sprintf(buffer_cmd, "Downloaded %d/%d bytes.\n", bytes_written, ftp_filesize(name));
-    if (-1 == send(client, buffer_cmd, strlen(buffer_cmd), 0))
+    if (-1 == send(client, buffer_cmd, strlen(buffer_cmd)+1, 0))
     {
         printf("Error download.\n");
         exit(0);

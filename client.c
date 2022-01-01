@@ -65,10 +65,11 @@ char *getNetIp()
 
 void welcome()
 {
-    int siteftp_count = 3;
+    int siteftp_count = 4;
     char *siteftp_list[] = {"freebsd.cs.nctu.edu.tw",
                             "ftp.pureftpd.org",
-                            "ftp.gnu.org"};
+                            "ftp.gnu.org",
+                            "ftp.vim.org"};
 
     printf("Welcome to my File Transfer client!\n");
     printf("Here is a list with ftp site suggestions(they are rare):\n");

@@ -136,7 +136,7 @@ int init_connection(int argc, char *argv[], int *sd)
 
     if (connect((*sd), (struct sockaddr *)&server, sizeof(struct sockaddr)) == -1)
     {
-        perror("[client]Eroare la connect().\n");
+        perror("[client]Server offline.\n");
         exit(0);
     }
 

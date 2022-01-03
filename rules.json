@@ -20,6 +20,6 @@
 			"name":	"test.ro",
 			"clientsrestricted":	["testclient.ro", "test2client.ro"],
 			"daysforbidden":	["tuesday", "wednesday", "thursday", "saturday"],
-			"hoursforbidden":	[15, 10, 3]
+			"hoursforbidden":	[15, 10, 4]
 		}]
 }

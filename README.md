@@ -8,7 +8,7 @@ Pentru partea de client se ruleaza `./client` intr-un terminal separat corespunz
 
 ### Clientul:
 
-![Client](/documentatie/Interfata client.png)
+![Client](/documentatie/Client.png)
 
 ### Cerinta:
 

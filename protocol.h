@@ -19,11 +19,11 @@
 #include <sys/wait.h>
 #include "cjson/cJSON.h"
 
-#define MAX_CMD 4096
+#define MAX_CMD 100*4096
 #define MAX_JSON 8192
 #define LONG_RESPONSE 100 * 4096
 #define MAX_PATH 2048
-#define MAX_COMMAND 300
+#define MAX_COMMAND 1024
 #define ANONYMOUS "anonymous"
 
 static char json_path[PATH_MAX];
@@ -40,7 +40,7 @@ static int socket_data;
 
 int create_tmp()
 {
-    DIR *dir = opendir("tmp"); // director temporar cu fisierele din proxy
+    DIR *dir = opendir("TMP"); // director temporar cu fisierele din proxy
     if (dir)
     {
         /* Directory exists. */
@@ -49,7 +49,7 @@ int create_tmp()
     else if (ENOENT == errno)
     {
         /* Directory does not exist. */
-        if (mkdir("tmp", 0777) == -1)
+        if (mkdir("TMP", 0777) == -1)
         {
             printf("[proxy]Error creating temporary director\n");
             return 0;
@@ -61,9 +61,9 @@ int create_tmp()
         return 0;
     }
 
-    if (-1 == chdir("tmp"))
+    if (-1 == chdir("TMP"))
     {
-        printf("[proxy]Error entering tmp folder.\n");
+        printf("[proxy]Error entering TMP folder.\n");
         return 0;
     }
 
@@ -280,7 +280,15 @@ int ftp_change_to_parentdirectory(int client)
     if (ftp_recv_cmd(buffer_cmd, MAX_CMD) != 250)
     {
         printf("[proxy]Parent cwd cmd invalid\n");
-        close(socket_cmd);
+
+        strcpy(buffer_cmd,"Path chosen is not a directory.");
+        if (-1 == send(client, buffer_cmd, strlen(buffer_cmd) + 1, 0))
+        {
+            printf("[proxy]Error send move-down incomplete.\n");
+            exit(0);
+        }
+
+        //close(socket_cmd);
         return 0;
     }
     else
@@ -320,7 +328,14 @@ int ftp_change_wdirectory(char *dir, int client)
         if (ftp_recv_cmd(buffer_cmd, MAX_CMD) != 250)
         {
             printf("[proxy]Cwd cmd invalid\n");
-            close(socket_cmd);
+
+            strcpy(buffer_cmd,"Path chosen is not a directory.");
+            if (-1 == send(client, buffer_cmd, strlen(buffer_cmd) + 1, 0))
+            {
+                printf("[proxy]Error send move-down incomplete.\n");
+                exit(0);
+            }
+            //close(socket_cmd);
             return 0;
         }
     } while (buffer_cmd[3] == '-');
@@ -643,7 +658,7 @@ int delete_directories()
         {
             count++;
         }
-        if (strcmp(p, "tmp") == 0)
+        if (strcmp(p, "TMP") == 0)
         {
             flag = 1;
         }
@@ -672,7 +687,7 @@ int delete_directories()
     }
     else if (pid == 0)
     {
-        execlp("rm", "rm", "-r", "tmp", NULL);
+        execlp("rm", "rm", "-r", "TMP", NULL);
         printf("[proxy]Error execlp delete.\n");
         exit(0);
     }
@@ -874,7 +889,7 @@ int check_file(char* name,int client)
 // name=path fisier
 int ftp_download(char *name, int client)
 {
-    char rasp[MAX_CMD];
+    char rasp[LONG_RESPONSE];
     //check restrictii:
     if(check_file(name,client)==0)
     {
@@ -906,6 +921,7 @@ int ftp_download(char *name, int client)
         }
     }
 
+    explicit_bzero(rasp,LONG_RESPONSE);
     if (access(name, F_OK) == 0)
     {
         // file exists
@@ -982,6 +998,7 @@ int ftp_download(char *name, int client)
     //printf("\nbefore sending\n");
     
     char ch[MAX_CMD];
+    explicit_bzero(ch,MAX_CMD);
     int bytes_written;
     int stop=1,aux;
     bytes_written = 0;
@@ -991,7 +1008,8 @@ int ftp_download(char *name, int client)
         {
             perror("Eroare fking fisier.\n");
         }
-        
+
+        //printf("[proxy]SIRUL DIN FISIER ESTE:%s\n",ch);
         if (aux == 0)
         {
             printf("[proxy]Download completed.\n");
@@ -1012,6 +1030,8 @@ int ftp_download(char *name, int client)
             bytes_written+=aux;
         }
     }
+    close(fd);
+
     char end=0;
     if (send(client, &end, sizeof(char), 0) < 0)
     {
@@ -1034,8 +1054,6 @@ int ftp_download(char *name, int client)
         printf("Error download.\n");
         exit(0);
     }
-
-    close(fd);
 
     return 1;
 }
@@ -1195,12 +1213,6 @@ int ftp_mode(char *server_ftp, int client)
         exit(0);
     }
 
-    if (create_tmp() != 1)
-    {
-        printf("[proxy]Eroare la creare folder temporar pe proxy.\n");
-        exit(0);
-    }
-
     // printf("These are the available commands:\n");
     //char rasp[MAX_CMD];
     strcpy(rasp, "These are the available commands:\n");
@@ -1269,12 +1281,6 @@ int ftp_mode(char *server_ftp, int client)
         {
             ftp_change_to_parentdirectory(client);
         }
-    }
-
-    if (delete_directories() != 1)
-    {
-        printf("[proxy]Eroare la stergere folder temporar pe proxy.\n");
-        exit(0);
     }
 
     return 1;

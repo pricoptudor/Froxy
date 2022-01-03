@@ -2,7 +2,7 @@
 #include "cjson/cJSON.h"
 #include "protocol.h"
 
-#define MAX_RESPONSE 4096
+#define MAX_RESPONSE 100*4096
 #define MAX_USERPASS 40
 #define MAX_CLIENTS 15
 #define PORT 2024
@@ -22,6 +22,13 @@ void my_handler(int signum)
                 clients_pid[i] = -1;
             }
         }
+
+        if (delete_directories() != 1)
+        {
+            printf("[proxy]Eroare la stergere folder temporar pe proxy.\n");
+            exit(0);
+        }
+
         exit(0);
     }
 }
@@ -1167,6 +1174,12 @@ int main()
     if (init_connect(&sd) == -1)
     {
         printf("[proxy]Error initiating server socket.\n");
+        exit(0);
+    }
+
+    if (create_tmp() != 1)
+    {
+        printf("[proxy]Eroare la creare folder temporar pe proxy.\n");
         exit(0);
     }
 

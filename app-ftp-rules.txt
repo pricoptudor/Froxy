@@ -31,3 +31,52 @@ COMMANDS:
         mode for modifying ftp rules
 
 
+
+Database:
+
+|   ID   | USERNAME | PASSWORD | ADMIN | LOGGED |
+    1       first      dub12      0        0
+    2       admin      admin      1        0
+    3       second     od&s1      1        0
+    4       cineva      sgs       0        1
+    5
+
+sql = "CREATE TABLE USERS("  \
+      "id INT," \
+      "username VARCHAR2(30)," \
+      "password VARCHAR2(30)," \
+      "admin NUMBER(1)," \
+      "logged NUMBER(1) );";
+
+
+
+Follow the instructions listed to modify restrictions:
+
+1.Want to add(a) or modify(m) the content?
+    type 'letter' + enter:
+        add -> 'a'    |     modify -> 'm'
+
+2.Daca un loc e lasat gol => print 'null'
+
+3.Pentru zilele saptamanii => print combinatie de cifre(intre 1 si 7,restul se ignora)
+    1-monday
+    2-tuesday
+    3-wednesday
+    4-thursday
+    5-friday
+    6-saturday
+    7-sunday
+    (e.g 15246)(orice alt caracter in afara de cifrele 1->7 este ignorat)
+
+4.Pentru intervalul orar => print ore intre 0 si 24, separate prin virgula;(daca ora nu este buna se ignora)
+    (e.g 7,8,12,20)
+
+
+
+[TO-DO] !!! DE PRINTAT INAINTE DE MODUL FORBIDDEN FAPTUL CA:
+            'a': afiseaza maxsize
+                 afiseaza file types + adauga 
+                 afiseaza server restrictions + adauga
+            'm': afiseaza maxsize + modifica
+                 afiseaza file types + delete
+                 afiseaza server restrictions + delete(toata structura)

@@ -16,8 +16,8 @@
 
 #define DEFAULT_PORT 2024
 #define MAX_JSON 8192
-#define MAX_RESPONSE 4096
-#define MAX_COMMAND 150
+#define MAX_RESPONSE 100*4096
+#define MAX_COMMAND 1024
 #define MAX_USERPASS 40
 
 char CURRENT_USER[MAX_USERPASS];
@@ -543,7 +543,7 @@ int mode10(char *command, int sd)
                 exit(0);
             }
 
-            ///////////////aici incepe partea ftp:
+            ///////////////aici incepe partea ftp;
             char rasp[MAX_RESPONSE];
             int stop=0;
             if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
@@ -564,17 +564,17 @@ int mode10(char *command, int sd)
                 printf("[client]Error send ok server.\n");
             }
 
-            if(stop)
-            {
-                return 0;
-            }
-
             if (-1 == recv(sd, rasp, MAX_RESPONSE, 0))
             {
                 printf("[client]Error recv ftp list.\n");
                 exit(0);
             }
             printf("%s\n", rasp);
+
+            if(stop)
+            {
+                return 0;
+            }
 
             while (1)
             {
@@ -763,11 +763,11 @@ int mode10(char *command, int sd)
                         strcpy(rasp,command+10);
                         int fd;
                         
-                        while( access( rasp, F_OK ) == 0 ) 
+                        while(access(rasp,F_OK)==0)
                         {
-                            // file exists
+                            //file exists
                             strcat(rasp,"(1)");
-                        } 
+                        }
 
                         if (-1 == (fd = open(rasp, O_RDWR | O_CREAT,0777)))
                         {
@@ -802,6 +802,7 @@ int mode10(char *command, int sd)
                                 printf("[proxy]Writing in file failed.\n");
                                 break;
                             }
+                            //printf("CARACTERUL ESTE: %c\n",ch);
                             bytes_read++;
                         }
 
@@ -1902,6 +1903,7 @@ int mode11(char *command, int sd)
                                 printf("[proxy]Writing in file failed.\n");
                                 break;
                             }
+                            //printf("CARACTERUL ESTE: %c\n",ch);
                             bytes_read++;
                         }
 
